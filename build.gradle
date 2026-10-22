@@ -1,0 +1,83 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+}
+
+version = project.mod_version
+group = project.maven_group
+base { archivesName = project.archives_base_name }
+
+loom {
+    splitEnvironmentSourceSets()
+    mods {
+        balance {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+    runs {
+        server {
+            server()
+            runDir 'run/server'
+            programArg 'nogui'
+            vmArg '-Xmx2G'
+        }
+        client {
+            client()
+            runDir 'run/client'
+            vmArg '-Xmx2G'
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+def resourceVersion = project.version.toString()
+processResources {
+    exclude '**/.gitkeep'
+    inputs.property 'version', resourceVersion
+    filesMatching('fabric.mod.json') { expand version: resourceVersion }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}
+tasks.withType(JavaExec).configureEach {
+    debugOptions.host = '127.0.0.1'
+}
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.register('validateAssets', Exec) {
+    group = 'verification'
+    description = 'Validate resource paths, JSON, PNGs, and sound references.'
+    commandLine 'python3', 'tools/asset_tool.py', 'validate'
+}
+tasks.register('testAssetTools', Exec) {
+    group = 'verification'
+    description = 'Run the asset tooling regression suite.'
+    commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tests', '-v'
+}
+tasks.register('verifyModJar', Exec) {
+    group = 'verification'
+    description = 'Inspect the distributable mod metadata and Java bytecode.'
+    dependsOn tasks.named('remapJar')
+    doFirst {
+        commandLine 'python3', 'tools/verify_jar.py',
+            tasks.named('remapJar').get().archiveFile.get().asFile.absolutePath
+    }
+}
+tasks.named('check') {
+    dependsOn 'validateAssets', 'testAssetTools', 'verifyModJar'
+}
