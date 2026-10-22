@@ -1,10 +1,12 @@
 # The Balance Between Good and Evil: design requirements
 
 This document records the agreed direction for a Minecraft Java survival horror
-mod built on the existing Minecraft 1.21.1 Fabric foundation. These are future
-design requirements, not implemented features. The current mod contains only
-development infrastructure and common/client initialization. No system, creature,
-location, story, or protective effect described here exists in gameplay yet.
+mod built on the existing Minecraft 1.21.1 Fabric foundation. These are design
+requirements, not claims of completed systems. Phase 1 implements a limited
+[Vigil Torch prototype](vigil-torch.md): a craftable light with a server-side ward
+that temporarily slows ordinary vanilla zombies. Its Slowness test is not the
+final supernatural behavior. The larger systems, creatures, locations, and story
+below remain planned; their creative direction is unchanged.
 
 ## Experience and original mythology
 

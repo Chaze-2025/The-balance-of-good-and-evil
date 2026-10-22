@@ -3,7 +3,7 @@
   "id": "balance",
   "version": "${version}",
   "name": "The Balance of Good and Evil",
-  "description": "Development foundation for The Balance of Good and Evil.",
+  "description": "Supernatural survival horror prototype featuring the Vigil Torch and server-authoritative ward protection.",
   "environment": "*",
   "entrypoints": {
     "main": ["dev.chaze.balance.BalanceMod"],

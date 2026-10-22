@@ -8,9 +8,11 @@ requests one. Inspect `git status --short` before and after changes; preserve
 unrelated edits and existing assets. Never reset or overwrite user work to make a
 build pass.
 
-The repository currently provides a Fabric development foundation. Do not add
-gameplay features as part of environment maintenance. The user must define the
-next feature before implementing one.
+The repository includes the Phase 1 Vigil Torch prototype on the Fabric
+foundation. Read `docs/vigil-torch.md` before changing protection behavior. Do not
+add gameplay as part of environment maintenance or expand into future creatures,
+Nightfall encounters, world generation, villages, factions, or stronger wards
+without a user-defined feature scope.
 
 ## Tool activation and checks
 
@@ -18,9 +20,11 @@ next feature before implementing one.
   Reuse installed tools and caches; do not repeat downloads without a reason.
 - Run Gradle through `./scripts/gradle.sh`. For raw `./gradlew` or JDK tools,
   first run `source scripts/env.sh` in that shell.
-- Required build check: `./scripts/gradle.sh clean build`.
+- Required build check:
+  `./scripts/gradle.sh --no-daemon --dependency-verification strict clean build`.
 - Asset utility tests: `python3 -m unittest discover -s tests -v`.
-- Resource check: `python3 tools/asset_tool.py validate`.
+- Resource checks: `python3 tools/asset_tool.py validate` and
+  `python3 tools/validate_vigil_resources.py`.
 - Packaged artifact check:
   `python3 tools/verify_jar.py build/libs/balance-0.1.0.jar`.
 - Generate mapped Minecraft sources with `./scripts/gradle.sh genSources` when
@@ -47,8 +51,13 @@ Follow `docs/architecture.md` for registries, entity synchronization, persistent
 state, data-driven content, and configuration. Avoid speculative abstractions or
 empty feature implementations. Add dependencies only when an actual feature
 needs them; GeckoLib is optional and is not installed. Respect asset licenses.
-Read `docs/GAME_DESIGN.md` for the agreed direction. It records future design
-requirements and does not itself authorize implementing gameplay or story content.
+Read `docs/GAME_DESIGN.md` for the agreed direction. Its future requirements do
+not themselves authorize more gameplay or story content. Keep the implemented
+Vigil Torch prototype distinct from those requirements. Ward state and effects
+are server-authoritative: do not trust particles or client interaction for
+protection, force-load chunks, clear unrelated potion effects, or persist the
+derived ward index. Extend meaningful pure-Java tests alongside logic changes;
+world lifecycle and visual claims require actual Minecraft runtime checks.
 
 ## Runtime boundaries
 

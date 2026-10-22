@@ -1,8 +1,9 @@
 # The-balance-of-good-and-evil
 
-A Minecraft Java Edition mod development foundation for Codex Cloud. The minimal
-`balance` mod supplies common and client initialization only. It adds no creatures,
-items, blocks, sounds, structures, or gameplay behavior.
+A Minecraft Java Edition supernatural survival horror mod developed in Codex
+Cloud. Phase 1 adds the **Vigil Torch**, a craftable protective light source.
+The larger mythology, creatures, settlements, and horror systems remain planned
+features; see [the game design](docs/GAME_DESIGN.md).
 
 ## Supported toolchain
 
@@ -29,7 +30,7 @@ computer installation is required for compiling and maintaining the project.
 ```bash
 cd /workspace/The-balance-of-good-and-evil
 bash scripts/setup.sh
-./scripts/gradle.sh clean build
+./scripts/gradle.sh --no-daemon --dependency-verification strict clean build
 python3 tools/verify_jar.py build/libs/balance-0.1.0.jar
 ```
 
@@ -47,14 +48,32 @@ python3 tools/asset_tool.py validate
 
 The distributable is `build/libs/balance-0.1.0.jar`. A sources JAR is for
 development and is not the file to place in a player's `mods` directory. The
-build validates the project resources; Python tests exercise asset validation and
-conversion independently of Minecraft.
-The suite also checks the declined-EULA smoke tool's refusal rules and reporting;
-it contains no Java gameplay tests yet.
+build runs Java unit tests for ward geometry, overlap/lifecycle bookkeeping, and
+effect eligibility, plus Python asset/resource and declined-EULA smoke-tool tests.
+Those checks do not replace testing in a running Minecraft world.
 
 The GitHub Actions build workflow runs the same Gradle checks and Python tests.
 CI needs no repository secrets. Consult the pull request's Actions checks for
 the actual hosted result; local build results are recorded separately.
+
+## Vigil Torch prototype
+
+Craft one regular torch, one gold nugget, and one amethyst shard together to make
+one Vigil Torch. Place it on a suitable floor or wall, or find it in the
+Functional Blocks Creative inventory category. It emits normal level-14 block
+light and a few golden particles. Interact with it to show its configured range.
+
+The separate supernatural ward has a default **14-block spherical radius** from
+the torch block center, including the boundary. On the server, ordinary vanilla
+zombies inside that sphere receive Slowness I on a scheduled refresh. The effect
+expires naturally shortly after leaving all wards or removing the torch. It
+does not stack across overlapping torches or replace stronger Slowness. Other
+mobs are unaffected. This is a weakening prototype, not enemy repulsion.
+
+See [Vigil Torch behavior, configuration, and testing](docs/vigil-torch.md) for
+placement rules, exact distance calculation, server configuration, and the
+remaining in-game checks. No creatures, director, factions, altars, village
+simulation, or custom world generation are implemented.
 
 ## Runtime and debugging
 
@@ -86,10 +105,10 @@ Blockbench, and Blender interfaces are not established by this setup. No remote
 desktop or game streaming service is included. See [validation evidence and
 limitations](docs/verification.md) for checks actually executed.
 
-## Extend the foundation
+## Continue development
 
 - [Game design](docs/GAME_DESIGN.md): agreed survival horror direction and future
-  requirements; the described gameplay systems are not implemented.
+  requirements; the Vigil Torch prototype implements only the first ward test.
 - [Architecture](docs/architecture.md): common/client boundaries, authoritative
   server logic, persistence, synchronization, entities, and world generation.
 - [Assets](docs/assets.md): Blockbench/Blender interchange, textures, animations,
@@ -98,8 +117,10 @@ limitations](docs/verification.md) for checks actually executed.
   the platform's existing GitHub integration.
 - [Agent instructions](AGENTS.md): safe, repeatable work in future Codex tasks.
 
-To create the first feature, choose its behavior and acceptance checks, implement
-the smallest common/server component under `dev.chaze.balance`, add client-only
-rendering and resources separately, then run the full build and relevant server
-or client checks. GeckoLib is an evaluated optional dependency, not installed in
-this foundation; add it only when a feature needs skeletal entity animation.
+Keep future changes small and independently testable. Reuse the ward source,
+index, and effect policy instead of building a second protection system. The
+recommended next technical milestone is a bounded, server-authoritative
+Nightfall clock with tested day/night transitions and configuration, before
+adding encounter selection or new entities. It is not implemented in Phase 1.
+GeckoLib remains an evaluated optional dependency; add it only when skeletal
+entity animation is needed.

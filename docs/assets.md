@@ -11,6 +11,10 @@ license, source, and export settings; do not redistribute Minecraft's own assets
 
 | Asset | Export location under `src/main/resources` |
 | --- | --- |
+| Block/item texture | `assets/balance/textures/block/<name>.png` or `textures/item/<name>.png` |
+| Blockstate | `assets/balance/blockstates/<name>.json` |
+| Crafting recipe | `data/balance/recipe/<name>.json` |
+| Block loot | `data/balance/loot_table/blocks/<name>.json` |
 | Entity texture | `assets/balance/textures/entity/<name>.png` |
 | Vanilla block/item model | `assets/balance/models/block/<name>.json` or `models/item/<name>.json` |
 | GeckoLib geometry, if GeckoLib is later added | `assets/balance/geo/<name>.geo.json` |
@@ -49,7 +53,8 @@ Walking, running, crawling, climbing, attacking, and idle clips should be separa
 named animation clips. Future client animation controllers should derive state
 from server-authoritative entity data; do not make gameplay depend on a rendered
 animation frame. No models, animation controllers, or gameplay clips are
-implemented in this foundation. Evaluate GeckoLib's exact Minecraft/Fabric
+implemented for entities in this phase. The Vigil Torch uses ordinary block/item
+models rather than skeletal animation. Evaluate GeckoLib's exact Minecraft/Fabric
 artifact before adding it; do not install heavy rendering dependencies by
 default.
 
@@ -70,6 +75,28 @@ not decode pixels, inspect UV alignment, enforce renderer-specific dimensions,
 or validate every Minecraft JSON schema. JSON validation rejects malformed
 files, duplicate keys, and nonstandard NaN/Infinity values. Resource files are
 checked for valid case-sensitive Minecraft paths.
+
+## Vigil Torch assets
+
+Phase 1 supplies an original 16×16 pixel-art golden/amber torch texture and
+standing/wall models using vanilla torch model templates. The texture is authored
+for this repository; no third-party artwork or copied Minecraft texture is
+packaged. Vanilla model parents remain references resolved by Minecraft. The
+item, both blockstates, English localization, one shapeless recipe, and both
+block loot tables are shipped together. Both variants drop `balance:vigil_torch`.
+
+The recipe uses Minecraft 1.21.1's singular `recipe` directory and result `id`
+field. Local model, texture, recipe, loot, and translation relationships are
+checked by the feature-specific validator:
+
+```sh
+python3 tools/validate_vigil_resources.py
+```
+
+The resource tests also mutate these relationships to ensure invalid content is
+rejected. Neither JSON/PNG validation nor a valid model parent establishes UV
+appearance, particle restraint, actual light propagation, or item presentation
+in a rendered Minecraft client. Those remain in-game review tasks.
 
 ## Audio
 
@@ -114,6 +141,7 @@ Stereo files produce warnings unless `--positional-audio` is supplied.
 ```sh
 python3 -m unittest discover -s tests -v
 python3 tools/asset_tool.py validate
+python3 tools/validate_vigil_resources.py
 ```
 
 The tests exercise malformed JSON, invalid identifiers, corrupt PNG chunks,
