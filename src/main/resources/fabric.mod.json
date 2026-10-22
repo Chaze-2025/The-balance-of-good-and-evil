@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "balance",
+  "version": "${version}",
+  "name": "The Balance of Good and Evil",
+  "description": "Development foundation for The Balance of Good and Evil.",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.chaze.balance.BalanceMod"],
+    "client": ["dev.chaze.balance.client.BalanceClient"]
+  },
+  "license": "All-Rights-Reserved",
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": ">=0.116.17+1.21.1"
+  }
+}
