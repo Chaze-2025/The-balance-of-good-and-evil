@@ -1,1 +1,6 @@
-{}
+{
+  "block.balance.vigil_torch": "Vigil Torch",
+  "block.balance.wall_vigil_torch": "Vigil Torch",
+  "item.balance.vigil_torch": "Vigil Torch",
+  "message.balance.vigil_ward_active": "Vigil Ward Active: %s blocks"
+}

@@ -6,6 +6,11 @@ import struct
 import zipfile
 from pathlib import Path
 
+try:
+    from .validate_vigil_resources import validate as validate_vigil_resources
+except ImportError:  # Direct CLI invocation, rather than importing tools.verify_jar.
+    from validate_vigil_resources import validate as validate_vigil_resources
+
 
 def verify(path: Path) -> dict:
     properties = Path(__file__).resolve().parents[1] / 'gradle.properties'
@@ -29,12 +34,29 @@ def verify(path: Path) -> dict:
             magic, _, major = struct.unpack('>IHH', data[:8])
             if magic != 0xCAFEBABE or major != 65:
                 raise ValueError(f'{name}: expected Java 21 class version 65')
+        feature_classes = (
+            'dev/chaze/balance/ward/WardSource.class',
+            'dev/chaze/balance/ward/WardIndex.class',
+            'dev/chaze/balance/ward/WardEffectPolicy.class',
+            'dev/chaze/balance/ward/VigilWards.class',
+            'dev/chaze/balance/registry/ModBlocks.class',
+            'dev/chaze/balance/registry/ModItems.class',
+            'dev/chaze/balance/registry/ModBlockEntities.class',
+            'dev/chaze/balance/block/entity/VigilTorchBlockEntity.class',
+        )
+        for name in feature_classes:
+            data = jar.read(name)
+            magic, _, major = struct.unpack('>IHH', data[:8])
+            if magic != 0xCAFEBABE or major != 65:
+                raise ValueError(f'{name}: expected Java 21 class version 65')
         names = jar.namelist()
         if any(n.startswith(('asset-sources/', 'tests/', 'tools/')) for n in names):
             raise ValueError('Development files leaked into the mod JAR')
         jar.read('assets/balance/sounds.json')
+        vigil_resources = validate_vigil_resources(jar.read)
         return {'jar': str(path), 'mod': metadata['id'], 'version': metadata['version'],
-                'entrypoints': list(expected), 'java_class_version': 65, 'bytes': path.stat().st_size}
+                'entrypoints': list(expected), 'java_class_version': 65, 'bytes': path.stat().st_size,
+                'vigil_feature_classes': len(feature_classes), 'vigil_resources': vigil_resources}
 
 
 if __name__ == '__main__':

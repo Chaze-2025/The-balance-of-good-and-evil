@@ -1,7 +1,9 @@
 # Environment verification
 
-Validated in Codex Cloud on 2026-10-22, Linux x86_64 (Debian 13). This is a
-development foundation with common/client initializers and no gameplay features.
+The foundation was validated in Codex Cloud on 2026-10-22, Linux x86_64
+(Debian 13). The original evidence below describes the foundation before
+Phase 1; it does not describe the current Vigil Torch artifact. Current feature
+verification is recorded in the Phase 1 section at the end of this document.
 
 ## Tools and provenance
 
@@ -51,9 +53,10 @@ that first-run warning. Neither the installer nor smoke tool accepts the EULA.
 The final build also resolved an execution-time Gradle project-access warning in
 the initial scaffold; the final clean build emitted no deprecation warning.
 
-The Gradle Java `test` task has **NO-SOURCE**. The 20 executed tests validate the
-Python development tools; they are not Java unit tests, GameTests, or gameplay
-tests. No such behavior exists in the minimal mod yet.
+At initial foundation validation the Gradle Java `test` task had **NO-SOURCE**.
+Its 20 executed tests validated Python development tools, not gameplay. Phase 1
+adds real Java ward-logic tests; their results belong to the current feature
+record rather than this historical foundation evidence.
 
 ## Produced artifact and logs
 
@@ -104,9 +107,9 @@ No new secret is needed for the verified workflow. Review and save the draft in
 environment settings, then publish to retain the prepared environment. Saving a
 draft did not publish a snapshot, and restoration in a new task is not yet tested.
 
-To begin the first mod feature, define its behavior and acceptance checks, add
-only the required Java/resources in the documented common/client layout, run
-`./scripts/gradle.sh clean build`, and perform the relevant server/client tests.
+For later features, define behavior and acceptance checks, add only the required
+Java/resources in the documented common/client layout, run the strict clean
+build, and perform the relevant server/client tests.
 For a world run, the user must first review Minecraft's EULA and agree in
 `run/server/eula.txt`; then `./scripts/gradle.sh runServer` can be validated beyond
 bootstrap. See [architecture](architecture.md), [assets](assets.md), and
@@ -205,3 +208,58 @@ The 1.21.1 Fabric toolchain and gameplay source are unchanged. The agreed game
 direction is recorded in [GAME_DESIGN.md](GAME_DESIGN.md) as future requirements,
 not implemented content. This phase does not accept the Minecraft EULA or merge
 the foundation PR.
+
+
+## Phase 1: Vigil Torch verification
+
+The implementation starts from foundation PR #1's verified merge commit
+`72f4750660780a1857ab0fa0c333247c1ac72cf8`, whose required checks passed.
+Minecraft 1.21.1, Java 21, Fabric Loader/API, Yarn, Loom, and Gradle pins are
+preserved. JUnit is a test-only dependency; it is not bundled in the playable JAR.
+
+Required repeatable checks:
+
+```sh
+./scripts/gradle.sh --no-daemon --dependency-verification strict clean build
+python3 -m unittest discover -s tests -v
+python3 tools/asset_tool.py validate
+python3 tools/validate_vigil_resources.py
+python3 tools/verify_jar.py build/libs/balance-0.1.0.jar
+```
+
+The build's `check` includes Java tests, Python tests, general asset validation,
+feature-specific resource validation, and packaged JAR checks. Java tests cover
+block-center spherical geometry, exact/vertical boundaries, source-index union
+and removal/rebuild bookkeeping, and effect refresh eligibility. These are
+pure-logic tests, not evidence that Minecraft placement or chunk events ran.
+Python resource tests validate and deliberately break resource relationships.
+The JAR check confirms expected code/resources are packaged, not rendered.
+
+Local Phase 1 verification completed on 2026-10-22:
+
+| Check | Result |
+| --- | --- |
+| Strict clean Gradle build | Passed in 14 seconds; all 15 tasks executed |
+| Java JUnit tests | 30 passed: 7 geometry, 9 index/lifecycle contracts, 8 effect policy, 6 configuration; no failures/errors/skips |
+| Python suite | 32 passed: 20 existing development-tool tests and 12 resource tests; no failures/skips; also rerun separately |
+| General asset validation | 25 resource files, zero errors/warnings |
+| Vigil resource validation | All 11 linked resources passed, including recipe-book discovery |
+| Distributable validation | Passed: Java 21 entrypoints, eight required feature classes, and linked resources; 30,012-byte JAR |
+| Dedicated-server bootstrap | Fabric discovered the mod, executed both common registration log messages, then declined to start a world because the EULA is not accepted; exit 0 |
+| EULA | Existing `eula=false` preserved |
+
+The resulting `build/libs/balance-0.1.0.jar` has SHA-256
+`5b1bca4c365ef519725286d27344b3cb0cfbf91477326cf075c3d8aecf422099`.
+JUnit's test-only published artifacts were independently verified against both
+official Maven Central endpoints and their SHA-256/SHA-512 sidecars; see
+[checksum provenance](junit-checksums.md). Strict verification settings and all
+existing checksums/trust scopes remain intact. Hosted Actions must be checked
+against the pushed PR head separately; this local record does not establish a
+hosted result.
+
+No EULA acceptance is authorized. A successful declined-EULA bootstrap can
+confirm Fabric/common initialization and registration without running a world.
+Placement, support removal, zombie movement/effect timing, real chunk/world
+reloads, light/particle appearance, and multiple clients require a permitted
+Minecraft world and are not established by compilation or pure-logic tests.
+See the [manual runtime checklist](vigil-torch.md#runtime-validation-checklist).

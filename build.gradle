@@ -34,6 +34,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.1'
 }
 
 def resourceVersion = project.version.toString()
@@ -54,6 +57,9 @@ tasks.withType(JavaCompile).configureEach {
 tasks.withType(JavaExec).configureEach {
     debugOptions.host = '127.0.0.1'
 }
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
 tasks.withType(AbstractArchiveTask).configureEach {
     preserveFileTimestamps = false
     reproducibleFileOrder = true
@@ -69,6 +75,11 @@ tasks.register('testAssetTools', Exec) {
     description = 'Run the asset tooling regression suite.'
     commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tests', '-v'
 }
+tasks.register('validateVigilResources', Exec) {
+    group = 'verification'
+    description = 'Validate Vigil Torch models, crafting, drops, and texture references.'
+    commandLine 'python3', 'tools/validate_vigil_resources.py'
+}
 tasks.register('verifyModJar', Exec) {
     group = 'verification'
     description = 'Inspect the distributable mod metadata and Java bytecode.'
@@ -79,5 +90,5 @@ tasks.register('verifyModJar', Exec) {
     }
 }
 tasks.named('check') {
-    dependsOn 'validateAssets', 'testAssetTools', 'verifyModJar'
+    dependsOn 'validateAssets', 'validateVigilResources', 'testAssetTools', 'verifyModJar'
 }

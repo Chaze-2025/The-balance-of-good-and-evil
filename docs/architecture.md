@@ -1,15 +1,20 @@
 # Architecture and extension points
 
-The foundation deliberately contains only mod initialization and build/asset
-tooling. The sections below describe where future features belong; they do not
-claim those features already exist.
+Phase 1 implements the Vigil Torch and a small server-side ward system. The
+entity, animation, audio, and world-generation sections below describe future
+extension points, not additional implemented gameplay. See
+[Vigil Torch](vigil-torch.md) for exact behavior and runtime test limits.
 
 ## Sources and resources
 
 | Location | Responsibility |
 | --- | --- |
 | `src/main/java/dev/chaze/balance/BalanceMod.java` | Common initialization; safe on a dedicated server |
-| `src/client/java/dev/chaze/balance/client/BalanceClient.java` | Client initialization and future rendering integration |
+| `src/client/java/dev/chaze/balance/client/BalanceClient.java` | Client initialization and Vigil Torch cutout rendering |
+| `src/main/java/dev/chaze/balance/registry/` | Explicit block, block-entity, and item registration |
+| `src/main/java/dev/chaze/balance/block/` | Standing/wall torches and marker block entity |
+| `src/main/java/dev/chaze/balance/ward/` | Pure ward geometry, source index, effect policy, and server adapter |
+| `src/test/java/dev/chaze/balance/ward/` | Java unit tests independent of a running world |
 | `src/main/resources/fabric.mod.json` | Mod identity, entrypoints, environment, and runtime dependencies |
 | `src/main/resources/assets/balance/` | Textures, sound declarations/audio, models, localization, and optional animation exports |
 | `src/main/resources/data/balance/` | Data-driven gameplay content and world generation |
@@ -88,11 +93,52 @@ upgrading dependencies, investigate official artifacts and review new checksums
 before regenerating that metadata. Never regenerate it to silence an unexplained
 checksum mismatch. Minecraft downloads also use Loom's manifest checksums.
 
-There is no gameplay configuration file because there are no configurable
-features yet. When one is needed, use Fabric Loader's config directory, explicit
-defaults and validation, and a versioned format. Keep server-authoritative
-settings on the server; synchronize any values needed by client presentation.
-Never embed secrets or machine-specific absolute paths in packaged resources.
+The Vigil Torch uses a versioned properties file in Fabric Loader's config
+directory: `config/balance-wards.properties`. Its radius defaults to 14 blocks;
+values must be finite, positive, and at most 64. Configuration is server-side and
+requires restart. Missing files receive defaults; existing files are preserved.
+Invalid or unreadable settings fail startup rather than falling back silently.
+The localized interaction message is sent by the server, so
+no custom networking is needed to display the configured radius. Never embed
+secrets or machine-specific absolute paths in packaged resources.
+
+## Implemented ward system
+
+`WardSource` holds block coordinates and a radius. It uses inclusive squared
+3D Euclidean distance from the block center to the target position. `WardIndex`
+contains the currently loaded source positions for one world and answers union
+queries; `WardEffectPolicy` determines whether Slowness I should be refreshed.
+These classes contain no Minecraft world access and have focused Java tests.
+The Minecraft adapter owns scheduling, entity-type checks, and status application.
+
+Both torch variants have a minimal marker block entity with no per-tick ticker
+or custom saved ward state. Fabric block-entity load/unload events populate and
+remove positions in transient per-`ServerWorld` indexes. World unload clears the
+index, and source validity is checked again before querying entities. Minecraft
+block/block-entity data remains authoritative across saves and reloads. No
+Minecraft entity or chunk reference is retained in the source index.
+
+Once per 20 server ticks, each valid loaded source performs a bounded nearby
+zombie query, then filters by exact ordinary zombie type and spherical distance.
+One per-world set deduplicates targets across overlapping source queries. The
+adapter uses the pure effect policy to preserve stronger, longer, or infinite
+unrelated Slowness. It never removes effects when a target leaves; short ward
+effects expire naturally. All world access remains on the server thread.
+
+Expected work per refresh is `O(W + sum(C_i))`, where `W` is loaded ward count
+and `C_i` is the nearby-query candidate count for ward `i`; deduplication uses
+space proportional to distinct eligible targets. Overlapping sources still
+repeat bounding-box queries, even though effect application is deduplicated.
+Dense torch farms and very high configured radii are the primary performance
+risks. There are no whole-world block/entity scans, forced chunk loads, custom
+packets, or per-torch tickers. Profile real settlement workloads before adding
+a spatial batching scheme.
+
+Future wards can reuse source geometry, loaded-world bookkeeping, and union
+queries while selecting a different effect or eligibility policy. Register
+actual sources through the same lifecycle boundary; do not make block light or
+particles determine protection. Hearth Altars, Sanctuary Hearts, creature
+resistance, factions, and director integration remain unimplemented.
 
 ## Verification as features arrive
 

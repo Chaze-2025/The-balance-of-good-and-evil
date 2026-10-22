@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "balance:block/wall_vigil_torch"
+    },
+    "facing=north": {
+      "model": "balance:block/wall_vigil_torch",
+      "y": 270
+    },
+    "facing=south": {
+      "model": "balance:block/wall_vigil_torch",
+      "y": 90
+    },
+    "facing=west": {
+      "model": "balance:block/wall_vigil_torch",
+      "y": 180
+    }
+  }
+}
