@@ -47,6 +47,8 @@ Follow `docs/architecture.md` for registries, entity synchronization, persistent
 state, data-driven content, and configuration. Avoid speculative abstractions or
 empty feature implementations. Add dependencies only when an actual feature
 needs them; GeckoLib is optional and is not installed. Respect asset licenses.
+Read `docs/GAME_DESIGN.md` for the agreed direction. It records future design
+requirements and does not itself authorize implementing gameplay or story content.
 
 ## Runtime boundaries
 

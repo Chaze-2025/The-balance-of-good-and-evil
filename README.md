@@ -88,6 +88,8 @@ limitations](docs/verification.md) for checks actually executed.
 
 ## Extend the foundation
 
+- [Game design](docs/GAME_DESIGN.md): agreed survival horror direction and future
+  requirements; the described gameplay systems are not implemented.
 - [Architecture](docs/architecture.md): common/client boundaries, authoritative
   server logic, persistence, synchronization, entities, and world generation.
 - [Assets](docs/assets.md): Blockbench/Blender interchange, textures, animations,

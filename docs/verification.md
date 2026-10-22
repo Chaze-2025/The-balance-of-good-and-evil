@@ -128,3 +128,80 @@ strict clean build: 20 tests passed, none skipped, with zero resource errors or
 warnings. Its distributable has the same SHA-256 recorded above. Raw downloaded
 dependency caches were reused for this check; it was not a new cloud instance.
 Hosted Actions results and remote push/PR state require separate verification.
+
+## Phase 0: missing published checksums
+
+The failed PR workflow run `39730392822` stopped during dependency verification.
+A source export of commit `bb2b0a6` with an entirely empty `GRADLE_USER_HOME`
+reproduced the two reported classpath failures: `guava-parent-33.0.0-jre.pom` and
+`junit-bom-5.10.1.module`. The existing JUnit POM checksum was already correct;
+the missing JUnit entry was its Gradle module metadata, not its POM.
+
+After verifying and adding those entries, the cold-cache build exposed two more
+unrecorded published artifacts: the Fabric Intermediary 1.21.1 v2 JAR and POM.
+The Minecraft libraries configuration then required JUnit BOM module metadata
+for 5.10.0 and 5.9.3. These six failures were all missing entries, not changes to
+known expected hashes.
+Earlier successful builds reused dependency caches, which did not exercise all
+of the published metadata and mapping downloads required by a cold build.
+
+The following SHA-256 entries were added individually:
+
+| Published artifact | Verified SHA-256 |
+| --- | --- |
+| `com.google.guava:guava-parent:33.0.0-jre` POM | `040cc88c680b413d70ba9fc8371b36093021b10996aa3598621de767d418229a` |
+| `org.junit:junit-bom:5.10.1` module metadata | `21b0afcfffe2ecb3770f5eb00ae7a19feaee94e771fa3918173850dae78067b7` |
+| `org.junit:junit-bom:5.10.0` module metadata | `eb3ee6127608010694a898056e7407d117296003aba5f5db801df430b9887fcf` |
+| `org.junit:junit-bom:5.9.3` module metadata | `b401fd25901e582a524aa5343c4b39e28bc56e24961c1069bf2b4bbfcee46b93` |
+| `net.fabricmc:intermediary:1.21.1` v2 JAR | `e8bd6a4c39e235ee2dc73063558610775c72a2572fa0c6b32915b149074012a6` |
+| `net.fabricmc:intermediary:1.21.1` POM | `b6ec5f03e95bea232b6960ed077dd0a765a3aabfd74732ee600eb77d2651adf4` |
+
+Verification provenance:
+
+- Guava's [published POM](https://repo.maven.apache.org/maven2/com/google/guava/guava-parent/33.0.0-jre/guava-parent-33.0.0-jre.pom)
+  was fetched over verified HTTPS from both `repo.maven.apache.org` and
+  `repo1.maven.org`. Their bytes and computed SHA-256 matched. Both copies also
+  matched the [published SHA-1](https://repo.maven.apache.org/maven2/com/google/guava/guava-parent/33.0.0-jre/guava-parent-33.0.0-jre.pom.sha1).
+  This release does not publish SHA-256/SHA-512 sidecars for that POM; the recorded
+  SHA-256 was computed from those corroborated bytes, not copied from a failed
+  verification report. SHA-1 is supporting evidence, not the Gradle checksum used.
+- JUnit's [module metadata](https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.module)
+  matched byte-for-byte across both Central endpoints and matched their published
+  [SHA-256](https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.module.sha256)
+  and SHA-512 sidecars. The already-recorded JUnit POM was checked independently
+  and retained unchanged.
+- JUnit BOM [5.10.0 module metadata](https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.10.0/junit-bom-5.10.0.module)
+  and [5.9.3 module metadata](https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.9.3/junit-bom-5.9.3.module)
+  each matched both Central endpoints, both publishers' SHA-256/SHA-512 sidecars,
+  and the cold-cache bytes. Their existing POM checksums were left unchanged.
+- Fabric's [Intermediary v2 JAR](https://maven.fabricmc.net/net/fabricmc/intermediary/1.21.1/intermediary-1.21.1-v2.jar)
+  and [POM](https://maven.fabricmc.net/net/fabricmc/intermediary/1.21.1/intermediary-1.21.1.pom)
+  each matched the official repository's SHA-256 and SHA-512 sidecars.
+- The independently verified artifacts also matched the actual bytes downloaded
+  into the cold Gradle dependency cache. No published artifact was exempted from
+  checksum verification, no existing checksum was replaced, and no new trust
+  exception was added. The existing local-output rules and all other verification
+  settings remain unchanged.
+
+The validation command explicitly selects strict verification:
+`./scripts/gradle.sh --no-daemon --dependency-verification strict clean build`.
+For a genuine cold-cache check, use an isolated source export without its
+`.gradle/` or `build/` directories and a new empty `GRADLE_USER_HOME`; changing
+only the project directory while reusing dependency caches is insufficient.
+Retain the regular development cache for routine builds rather than deleting it.
+
+Final Phase 0 validation used another source export and a second, newly created
+empty dependency cache after all six entries were added. The strict clean build
+passed in 1 minute 43 seconds: 12 tasks executed, all 20 existing Python tests
+passed with none skipped, and 15 resource files validated with zero errors or
+warnings. Both mod entrypoints compiled and the Java 21 distributable passed its
+JAR validation. Its SHA-256 matches the artifact recorded above. The wrapper,
+plugin dependencies, mappings, and Minecraft build dependencies were downloaded
+into that new cache; no previous dependency cache or project cache was copied.
+CI now explicitly passes `--dependency-verification strict` as well. The later
+hosted Actions result must be verified against the pushed PR head separately.
+
+The 1.21.1 Fabric toolchain and gameplay source are unchanged. The agreed game
+direction is recorded in [GAME_DESIGN.md](GAME_DESIGN.md) as future requirements,
+not implemented content. This phase does not accept the Minecraft EULA or merge
+the foundation PR.
