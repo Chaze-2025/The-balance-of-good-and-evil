@@ -64,7 +64,8 @@ def verify(path: Path) -> dict:
             if magic != 0xCAFEBABE or major != 65:
                 raise ValueError(f'{name}: expected Java 21 class version 65')
         names = jar.namelist()
-        if any(n.startswith(('asset-sources/', 'tests/', 'tools/')) for n in names):
+        if any(n.startswith(('asset-sources/', 'tests/', 'tools/',
+                             'dev/chaze/balance/gametest/', 'data/balance-test/')) for n in names):
             raise ValueError('Development files leaked into the mod JAR')
         jar.read('assets/balance/sounds.json')
         vigil_resources = validate_vigil_resources(jar.read)

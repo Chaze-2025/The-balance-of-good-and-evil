@@ -1,10 +1,21 @@
 name: Build foundation
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      minecraft_eula_acknowledgement:
+        description: 'Blank = compile/unit only. To run worlds after accepting EULA, type I_ACCEPT_MINECRAFT_EULA_FOR_ISOLATED_TESTS'
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch' || inputs.minecraft_eula_acknowledgement == ''
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -14,13 +25,106 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install audio validation tools
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install audio validation tools when missing
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version
+          ffprobe -version
       - uses: gradle/actions/setup-gradle@v4
       - name: Clean build and validation
         run: ./gradlew --no-daemon --dependency-verification strict clean build
+      - name: Collect Python test results
+        run: |
+          mkdir -p build/reports/cloud-testing
+          python3 -m unittest discover -s tests -v > build/reports/cloud-testing/python-tests.log 2>&1
+      - name: Publish verification summary (world tests are not run)
+        if: always()
+        run: |
+          report_exit=0
+          python3 tools/testing_report.py || report_exit=$?
+          if [ -f build/reports/cloud-testing/summary.md ]; then
+            cat build/reports/cloud-testing/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$report_exit"
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-test-reports
+          path: |
+            build/reports/cloud-testing/
+            build/reports/tests/
+            build/test-results/
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
           name: balance-mod
           path: build/libs/*.jar
           if-no-files-found: error
+
+  runtime:
+    if: github.event_name == 'workflow_dispatch' && inputs.minecraft_eula_acknowledgement != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require repository owner and explicit EULA acknowledgement
+        env:
+          OWNER_CONSENT: ${{ inputs.minecraft_eula_acknowledgement }}
+        run: |
+          if [ "$GITHUB_ACTOR" != "$GITHUB_REPOSITORY_OWNER" ] || [ "$OWNER_CONSENT" != 'I_ACCEPT_MINECRAFT_EULA_FOR_ISOLATED_TESTS' ]; then
+            echo '::error::Only the repository owner can authorize these Minecraft worlds after explicitly accepting the EULA.'
+            exit 1
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install audio validation tools when missing
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version
+          ffprobe -version
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Strict build and GameTest compilation
+        run: ./gradlew --no-daemon --dependency-verification strict clean build
+      - name: Collect Python test results
+        run: |
+          mkdir -p build/reports/cloud-testing
+          python3 -m unittest discover -s tests -v > build/reports/cloud-testing/python-tests.log 2>&1
+      - name: Run isolated Minecraft worlds after owner consent
+        env:
+          OWNER_CONSENT: ${{ inputs.minecraft_eula_acknowledgement }}
+        run: python3 tools/run_gametests.py --owner-eula-consent "$OWNER_CONSENT" --timeout 300
+      - name: Publish verification summary
+        if: always()
+        run: |
+          report_exit=0
+          python3 tools/testing_report.py || report_exit=$?
+          if [ -f build/reports/cloud-testing/summary.md ]; then
+            cat build/reports/cloud-testing/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$report_exit"
+      - name: Upload runtime reports and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-test-reports
+          path: |
+            build/reports/cloud-testing/
+            build/reports/gametest/
+            build/reports/tests/
+            build/test-results/
+            build/run/gameTest/logs/
+          if-no-files-found: warn

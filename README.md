@@ -58,6 +58,22 @@ The GitHub Actions build workflow runs the same Gradle checks and Python tests.
 CI needs no repository secrets. Consult the pull request's Actions checks for
 the actual hosted result; local build results are recorded separately.
 
+## Cloud testing and iPhone reports
+
+[The cloud testing workflow](docs/cloud-testing.md) adds isolated Fabric 1.21.1
+GameTest sources and reports that can be reviewed through GitHub Actions on an
+iPhone. Regular checks compile GameTests without starting Minecraft worlds.
+The job summary is the primary mobile view; `cloud-test-reports` contains HTML,
+summaries, XML results, and available logs.
+
+World-running tests require the owner's explicit Minecraft EULA agreement.
+Fabric's GameTest runner bypasses the usual EULA-file check, so `eula=false`
+alone is not a sufficient guard. The project requires explicit owner consent
+before its isolated runtime launcher runs and preserves the existing EULA file.
+The guide explains authorization, manual execution, report interpretation, and
+investigated multiplayer/screenshot/video options. Compiled tests are not
+reported as completed gameplay tests.
+
 ## Vigil Torch prototype
 
 Craft one regular torch, one gold nugget, and one amethyst shard together to make
