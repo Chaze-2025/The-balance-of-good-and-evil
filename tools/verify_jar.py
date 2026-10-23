@@ -49,14 +49,47 @@ def verify(path: Path) -> dict:
             magic, _, major = struct.unpack('>IHH', data[:8])
             if magic != 0xCAFEBABE or major != 65:
                 raise ValueError(f'{name}: expected Java 21 class version 65')
+        nightfall_classes = (
+            'dev/chaze/balance/nightfall/NightfallPhase.class',
+            'dev/chaze/balance/nightfall/NightfallClock.class',
+            'dev/chaze/balance/nightfall/NightfallState.class',
+            'dev/chaze/balance/nightfall/NightfallTracker.class',
+            'dev/chaze/balance/nightfall/NightfallService.class',
+            'dev/chaze/balance/nightfall/NightfallCommands.class',
+            'dev/chaze/balance/config/NightfallConfig.class',
+        )
+        for name in nightfall_classes:
+            data = jar.read(name)
+            magic, _, major = struct.unpack('>IHH', data[:8])
+            if magic != 0xCAFEBABE or major != 65:
+                raise ValueError(f'{name}: expected Java 21 class version 65')
         names = jar.namelist()
         if any(n.startswith(('asset-sources/', 'tests/', 'tools/')) for n in names):
             raise ValueError('Development files leaked into the mod JAR')
         jar.read('assets/balance/sounds.json')
         vigil_resources = validate_vigil_resources(jar.read)
+        lang = json.loads(jar.read('assets/balance/lang/en_us.json'))
+        nightfall_translation_keys = (
+            'command.balance.nightfall.status',
+            'nightfall.balance.phase.daylight',
+            'nightfall.balance.phase.dusk',
+            'nightfall.balance.phase.night',
+            'nightfall.balance.phase.deep_night',
+            'nightfall.balance.phase.dawn',
+            'nightfall.balance.phase.inactive',
+            'nightfall.balance.enabled',
+            'nightfall.balance.disabled',
+        )
+        for key in nightfall_translation_keys:
+            if not isinstance(lang.get(key), str) or not lang[key].strip():
+                raise ValueError(f'Missing or empty Nightfall translation: {key}')
+        if lang['command.balance.nightfall.status'].count('%s') != 5:
+            raise ValueError('Nightfall status translation must contain five %s placeholders')
         return {'jar': str(path), 'mod': metadata['id'], 'version': metadata['version'],
                 'entrypoints': list(expected), 'java_class_version': 65, 'bytes': path.stat().st_size,
-                'vigil_feature_classes': len(feature_classes), 'vigil_resources': vigil_resources}
+                'vigil_feature_classes': len(feature_classes), 'vigil_resources': vigil_resources,
+                'nightfall_feature_classes': len(nightfall_classes),
+                'nightfall_translation_keys': len(nightfall_translation_keys)}
 
 
 if __name__ == '__main__':

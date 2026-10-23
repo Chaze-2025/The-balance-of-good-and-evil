@@ -1,9 +1,10 @@
 # The-balance-of-good-and-evil
 
 A Minecraft Java Edition supernatural survival horror mod developed in Codex
-Cloud. Phase 1 adds the **Vigil Torch**, a craftable protective light source.
-The larger mythology, creatures, settlements, and horror systems remain planned
-features; see [the game design](docs/GAME_DESIGN.md).
+Cloud. The **Vigil Torch** provides the first protective light source. Phase 2
+adds **Nightfall**, a server-side clock and base supernatural danger state derived
+from Minecraft time. The larger mythology, creatures, settlements, and encounters
+remain planned; see [the game design](docs/GAME_DESIGN.md).
 
 ## Supported toolchain
 
@@ -48,8 +49,9 @@ python3 tools/asset_tool.py validate
 
 The distributable is `build/libs/balance-0.1.0.jar`. A sources JAR is for
 development and is not the file to place in a player's `mods` directory. The
-build runs Java unit tests for ward geometry, overlap/lifecycle bookkeeping, and
-effect eligibility, plus Python asset/resource and declined-EULA smoke-tool tests.
+build runs Java unit tests for ward logic, Nightfall phase calculations,
+configuration, and transition policies, plus Python asset/resource and
+declined-EULA smoke-tool tests.
 Those checks do not replace testing in a running Minecraft world.
 
 The GitHub Actions build workflow runs the same Gradle checks and Python tests.
@@ -74,6 +76,38 @@ See [Vigil Torch behavior, configuration, and testing](docs/vigil-torch.md) for
 placement rules, exact distance calculation, server configuration, and the
 remaining in-game checks. No creatures, director, factions, altars, village
 simulation, or custom world generation are implemented.
+
+## Nightfall foundation
+
+Nightfall reads the server world's existing time without changing the vanilla
+clock, mob spawning, damage, health, or AI. Its default Overworld phases are:
+
+| Phase | Minecraft time of day | Base danger intensity |
+| --- | --- | --- |
+| Daylight | 0–11,499 | 0.15 |
+| Dusk | 11,500–12,999 | 0.40 |
+| Night | 13,000–16,999 | 0.75 |
+| Deep Night | 17,000–22,499 | 1.00 |
+| Dawn | 22,500–23,999 | 0.25 |
+
+Server APIs return current state from authoritative world time, including between
+scheduled transition observations. Sleep and time commands can jump directly to
+a new phase; polling does not invent intermediate transitions. The Nether, End,
+and custom dimensions are inactive in this phase. Vigil Torches remain independent.
+
+Operators with permission level 2 can inspect their command's current dimension:
+
+```text
+/balance nightfall status
+```
+
+The command reports dimension, normalized time, phase, base intensity, and whether
+Nightfall is active. Settings live in `config/balance-nightfall.properties` and
+require a server restart. See [Nightfall behavior and testing](docs/nightfall.md)
+for exact intervals, configuration validation, API contracts, and runtime limits.
+Base intensity is a future decision input; it does not override wards or the
+planned permanent safety of Light territory. There are no Nightfall encounters,
+client HUD, or custom network messages yet.
 
 ## Runtime and debugging
 
@@ -109,6 +143,8 @@ limitations](docs/verification.md) for checks actually executed.
 
 - [Game design](docs/GAME_DESIGN.md): agreed survival horror direction and future
   requirements; the Vigil Torch prototype implements only the first ward test.
+- [Nightfall](docs/nightfall.md): phases, base intensity, server configuration,
+  diagnostics, transition behavior, and remaining runtime checks.
 - [Architecture](docs/architecture.md): common/client boundaries, authoritative
   server logic, persistence, synchronization, entities, and world generation.
 - [Assets](docs/assets.md): Blockbench/Blender interchange, textures, animations,
@@ -119,8 +155,9 @@ limitations](docs/verification.md) for checks actually executed.
 
 Keep future changes small and independently testable. Reuse the ward source,
 index, and effect policy instead of building a second protection system. The
-recommended next technical milestone is a bounded, server-authoritative
-Nightfall clock with tested day/night transitions and configuration, before
-adding encounter selection or new entities. It is not implemented in Phase 1.
+recommended next technical milestone is a bounded, cooldown-based encounter
+eligibility policy that combines Nightfall with ward checks and deterministic
+tests. A separately scoped original creature can then consume that policy.
+Neither encounter selection nor new creatures are implemented in Phase 2.
 GeckoLib remains an evaluated optional dependency; add it only when skeletal
 entity animation is needed.
