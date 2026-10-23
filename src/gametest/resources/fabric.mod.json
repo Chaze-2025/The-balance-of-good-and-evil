@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "balance-test",
+  "version": "1.0.0",
+  "name": "Balance isolated runtime tests",
+  "environment": "server",
+  "entrypoints": {
+    "fabric-gametest": [
+      "dev.chaze.balance.gametest.VigilTorchGameTests",
+      "dev.chaze.balance.gametest.NightfallGameTests"
+    ]
+  },
+  "license": "All-Rights-Reserved",
+  "depends": {
+    "balance": "*",
+    "fabric-gametest-api-v1": "*",
+    "minecraft": "1.21.1",
+    "java": ">=21"
+  }
+}

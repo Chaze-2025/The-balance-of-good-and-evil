@@ -128,6 +128,17 @@ class JarVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, 'VigilWards.class'):
             self.verify()
 
+    def test_isolated_gametest_code_and_resources_cannot_ship_in_the_mod(self):
+        for name in ('dev/chaze/balance/gametest/VigilTorchGameTests.class',
+                     'data/balance-test/gametest/structure/ward_arena.snbt'):
+            with self.subTest(name=name):
+                self.entries[name] = b'isolated test fixture'
+                try:
+                    with self.assertRaisesRegex(ValueError, 'Development files leaked'):
+                        self.verify()
+                finally:
+                    self.entries.pop(name)
+
 
 if __name__ == '__main__':
     unittest.main()

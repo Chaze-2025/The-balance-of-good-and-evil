@@ -320,3 +320,46 @@ only Fabric/common initialization to that boundary. Actual world clock updates,
 live command execution/feedback, sleeping, pause/resume, lifecycle notifications,
 save/reload, dimension transfers, and multiple-client behavior require a permitted
 Minecraft world. See the [runtime checklist](nightfall.md#automated-and-runtime-verification).
+
+## Cloud testing workflow
+
+This change is based on the unmerged Phase 2 branch so the focused PR can test
+both systems without merging PR #3. It preserves existing gameplay, the pinned
+compatibility baseline, and strict dependency verification. See
+[cloud testing](cloud-testing.md) for commands and iPhone report review.
+
+The normal build compiles isolated Fabric GameTests; compilation does not prove
+discovery or runtime assertions. World-running tests need explicit owner
+authorization because the pinned GameTest runner bypasses the ordinary EULA-file
+check. No runtime permission is inferred from workflow preparation, and the normal
+server's `eula=false` is preserved.
+
+Local verification completed on 2026-10-23:
+
+| Check | Actual result |
+| --- | --- |
+| Strict clean build | Passed in 16 seconds, 17 tasks executed; GameTest compilation included, no world launched |
+| Java tests | 73 passed, no failures/errors/skips: all 71 existing tests plus 2 worldless Minecraft SNBT conversion tests |
+| Python tests | 60 passed, no failures/skips: all 39 existing tests plus reporting, consent/launcher, and test-content packaging regressions |
+| Prepared GameTests | 8 Vigil scenarios and 1 serialized Nightfall scenario compile; runtime discovery and assertions are **not run** |
+| Consent guards | Python launcher refused without consent; direct Gradle runtime launch refused before task execution |
+| Reports | HTML, Markdown, and JSON generated; runtime correctly marked blocked, with no graphical/multiplayer/disk-persistence claim |
+| Resources and artifact | 25 resource files with zero errors/warnings, all 11 Vigil resources valid, distributable verified without GameTest code/resources |
+| Normal server bootstrap | Common initialization succeeded, including Nightfall, then stopped at the declined-EULA boundary; no world ran |
+| Preservation | Production source/resources, existing Java tests, pinned dependencies/wrapper/checksums unchanged; `run/server/eula.txt` bytes preserved |
+
+The distributable remains byte-for-byte identical to Phase 2: 49,823 bytes,
+SHA-256 `cbc5899b5f7d36d27f640e9a621836f47d09137d236155e0869f5a82df53b202`.
+The structure tests use Minecraft's real provider-SNBT conversion to validate the
+test fixture, without a server or world. Launcher/report tests use synthetic
+processes and XML; those passing tests are not Minecraft execution evidence.
+The owner has not authorized EULA acceptance, so no GameTest world, real sleep,
+status-effect runtime assertion, disk restart, true chunk unload, real-client
+multiplayer, screenshot, or Minecraft video is claimed. Hosted build/report
+publication is verified separately against the pushed testing PR head.
+
+Read-only inspection found FFmpeg/ffprobe 7.1.5 and Mesa driver files, but no Xvfb,
+configured display, or tested OpenGL context. No Minecraft screenshot/video was
+produced. The pinned API has server GameTests; newer client GameTest APIs are not
+part of the 1.21.1 baseline. The guide documents a future free client-capture path
+without claiming that it has been installed or validated.

@@ -29,6 +29,50 @@ loom {
     }
 }
 
+// Keep world tests separate from ordinary unit tests. Loom's automatic
+// enableGameTests=true wiring would launch Minecraft from `test` and Fabric
+// bypasses its usual EULA check, even with eula=false.
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'balance-test'
+        enableGameTests = false
+        enableClientGameTests = false
+        eula = false
+        clearRunDirectory = false
+    }
+}
+loom {
+    runs {
+        gameTest {
+            server()
+            source('gametest')
+            runDir('build/run/gameTest')
+            vmArg('-Xmx2G')
+            property('fabric-api.gametest')
+            property('fabric-api.gametest.report-file',
+                layout.buildDirectory.file('reports/gametest/results.xml').get().asFile.absolutePath)
+            ideConfigGenerated(false)
+        }
+    }
+}
+def gameTestOwnerConsent = providers.gradleProperty('balanceGameTestEulaConsent')
+def requiredGameTestConsent = 'I_ACCEPT_MINECRAFT_EULA_FOR_ISOLATED_TESTS'
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(tasks.named('runGameTest').get())
+            && gameTestOwnerConsent.orNull != requiredGameTestConsent) {
+        throw new GradleException('GameTests blocked: the owner must explicitly accept the Minecraft EULA for isolated tests. '
+                + 'Use tools/run_gametests.py only after that authorization. Existing eula=false is preserved.')
+    }
+}
+tasks.named('runGameTest') {
+    doFirst {
+        if (gameTestOwnerConsent.orNull != requiredGameTestConsent) {
+            throw new GradleException('Missing explicit owner EULA consent; no Minecraft world launched.')
+        }
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
@@ -90,5 +134,5 @@ tasks.register('verifyModJar', Exec) {
     }
 }
 tasks.named('check') {
-    dependsOn 'validateAssets', 'validateVigilResources', 'testAssetTools', 'verifyModJar'
+    dependsOn 'validateAssets', 'validateVigilResources', 'testAssetTools', 'verifyModJar', 'gametestClasses'
 }

@@ -27,6 +27,10 @@ factions, or stronger wards without a user-defined feature scope.
   `python3 tools/validate_vigil_resources.py`.
 - Packaged artifact check:
   `python3 tools/verify_jar.py build/libs/balance-0.1.0.jar`.
+- Read `docs/cloud-testing.md` before running/changing the isolated Fabric
+  GameTests. The regular build compiles their source set without running worlds.
+  Generate mobile reports with `python3 tools/testing_report.py` after validation
+  and retain the distinction between unit and runtime results.
 - Generate mapped Minecraft sources with `./scripts/gradle.sh genSources` when
   needed for API investigation. Consult actual 1.21.1 Yarn names rather than
   examples targeting other Minecraft versions.
@@ -74,6 +78,21 @@ and avoid custom networking until a concrete client feature requires it.
 Do not automatically accept the Minecraft EULA. `runServer` requires the user's
 own agreement before running a world. An EULA-declined smoke check verifies only
 startup to that boundary.
+
+Fabric 1.21.1's GameTest mixin bypasses the ordinary EULA-file gate when enabled.
+Never treat `eula=false` as permission to launch GameTests. Require the owner's
+explicit Minecraft EULA agreement and authorization for isolated test worlds
+before using `tools/run_gametests.py` or an equivalent runtime task. Never set
+the consent token without that prior owner agreement, invoke Minecraft directly
+to evade the guard, or attach runtime tests to a default build/PR check. Preserve the normal
+`run/server` EULA and saves.
+
+Report compiled GameTests separately from executed tests with current, nonempty
+Minecraft XML results. Mock players do not prove real multiplayer; NBT roundtrips
+do not prove disk restarts or chunk unloading. Visual claims require an actual
+rendered Minecraft client and files produced by that run. Keep test-only classes
+and resources out of the mod JAR and publish report/log evidence through Actions
+without account tokens or fabricated visual artifacts.
 
 Do not claim graphical Minecraft, Blockbench, Blender UI, multiplayer behavior,
 or gameplay has been tested without actually executing the appropriate checks.
