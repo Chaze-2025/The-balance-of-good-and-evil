@@ -1,5 +1,6 @@
 package dev.chaze.balance;
 
+import dev.chaze.balance.nightfall.NightfallService;
 import dev.chaze.balance.registry.ModBlockEntities;
 import dev.chaze.balance.registry.ModBlocks;
 import dev.chaze.balance.registry.ModItems;
@@ -24,7 +25,9 @@ public final class BalanceMod implements ModInitializer {
         ModItems.initialize();
         ModBlockEntities.initialize();
         VigilWards.initialize();
+        NightfallService.initialize();
         LOGGER.info("Balance development foundation initialized");
         LOGGER.info("Vigil Torch registries and server ward lifecycle initialized");
+        LOGGER.info("Nightfall server lifecycle and administrative diagnostics initialized");
     }
 }

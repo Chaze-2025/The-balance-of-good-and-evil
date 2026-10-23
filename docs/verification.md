@@ -263,3 +263,60 @@ Placement, support removal, zombie movement/effect timing, real chunk/world
 reloads, light/particle appearance, and multiple clients require a permitted
 Minecraft world and are not established by compilation or pure-logic tests.
 See the [manual runtime checklist](vigil-torch.md#runtime-validation-checklist).
+
+## Phase 2: Nightfall verification
+
+Phase 2 starts from Phase 1 PR #2's verified merge commit
+`00de0f9670071111d486ed17b9edd520a499121d`, whose two build checks passed.
+Minecraft 1.21.1, Java 21, Fabric Loader/API, Yarn, Loom, Gradle, and strict
+dependency verification remain the compatibility baseline. Nightfall adds no
+unrelated dependency and preserves Vigil-specific source, resources,
+configuration, registration behavior, and existing tests. Shared initializer
+and localization files may gain Nightfall entries without changing those wards.
+
+Required checks:
+
+```sh
+./scripts/gradle.sh --no-daemon --dependency-verification strict clean build
+python3 -m unittest discover -s tests -v
+python3 tools/asset_tool.py validate
+python3 tools/validate_vigil_resources.py
+python3 tools/verify_jar.py build/libs/balance-0.1.0.jar
+```
+
+Nightfall Java tests exercise supplied-time phase calculations, exact boundaries,
+long-safe wrapping, configuration validation, disabled/unsupported states, and
+observation/transition policies. Simulated sleeping, frozen time, time jumps, and
+independent trackers test pure contracts; they are not actual Minecraft world,
+command, sleep, or multiplayer tests. Existing ward tests and Python resource/tool
+tests remain required regressions. JAR checks establish packaging, not gameplay.
+
+Local Phase 2 validation completed on 2026-10-23:
+
+| Check | Actual result |
+| --- | --- |
+| Strict clean Gradle build | Passed in 16 seconds; 15 tasks executed |
+| Java tests | 71 passed, no failures/errors/skips: all 30 existing ward/configuration tests plus 41 Nightfall tests |
+| Nightfall test coverage | 9 clock, 12 configuration, 6 state, 12 transition, and 2 worldless command-tree/permission tests |
+| Complete Python suite | 39 passed, no failures/skips: all 32 existing tests plus 7 packaging regressions; also rerun separately |
+| General asset validation | 25 resource files, zero errors/warnings |
+| Vigil resource validation | All 11 linked resources passed without changes |
+| Distributable validation | Both Java 21 entrypoints, 8 existing ward classes, 7 Nightfall classes, 9 Nightfall localization keys, and Vigil resources verified |
+| Server bootstrap | Minecraft 1.21.1/Fabric initialized the mod, including the Nightfall callback-registration log, then refused to start a world at the EULA boundary; exit 0 |
+| Preservation review | Vigil-specific source/resources/configuration/tests, existing translation values, dependency pins, build configuration, wrapper, and verification metadata unchanged |
+
+The 49,823-byte `build/libs/balance-0.1.0.jar` has SHA-256
+`cbc5899b5f7d36d27f640e9a621836f47d09137d236155e0869f5a82df53b202`.
+The two command tests use real Brigadier nodes and permission-only Minecraft
+command sources, without executing the status handler or creating a world.
+Their generated root logging directory is ignored. Packaging regression fixtures
+contain deliberately synthetic class headers; the separate real build/JAR check
+provides the actual artifact evidence. No dependency or checksum update was
+needed. Hosted Actions must be verified against the pushed PR head separately;
+this local record does not establish a hosted result.
+
+No EULA acceptance is authorized. A successful declined-EULA smoke run proves
+only Fabric/common initialization to that boundary. Actual world clock updates,
+live command execution/feedback, sleeping, pause/resume, lifecycle notifications,
+save/reload, dimension transfers, and multiple-client behavior require a permitted
+Minecraft world. See the [runtime checklist](nightfall.md#automated-and-runtime-verification).

@@ -5,8 +5,10 @@ mod built on the existing Minecraft 1.21.1 Fabric foundation. These are design
 requirements, not claims of completed systems. Phase 1 implements a limited
 [Vigil Torch prototype](vigil-torch.md): a craftable light with a server-side ward
 that temporarily slows ordinary vanilla zombies. Its Slowness test is not the
-final supernatural behavior. The larger systems, creatures, locations, and story
-below remain planned; their creative direction is unchanged.
+final supernatural behavior. Phase 2 adds a server-side Nightfall clock and
+queryable base danger intensity, described in [Nightfall](nightfall.md); it adds
+no encounters or creature behavior. The larger systems, creatures, locations,
+and story below remain planned; their creative direction is unchanged.
 
 ## Experience and original mythology
 

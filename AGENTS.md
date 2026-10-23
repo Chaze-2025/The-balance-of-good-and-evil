@@ -8,11 +8,11 @@ requests one. Inspect `git status --short` before and after changes; preserve
 unrelated edits and existing assets. Never reset or overwrite user work to make a
 build pass.
 
-The repository includes the Phase 1 Vigil Torch prototype on the Fabric
-foundation. Read `docs/vigil-torch.md` before changing protection behavior. Do not
-add gameplay as part of environment maintenance or expand into future creatures,
-Nightfall encounters, world generation, villages, factions, or stronger wards
-without a user-defined feature scope.
+The repository includes the Vigil Torch prototype and Phase 2 Nightfall clock
+on the Fabric foundation. Read `docs/vigil-torch.md` and `docs/nightfall.md` before
+changing either system. Do not add gameplay as part of environment maintenance
+or expand into creatures, Nightfall encounters, world generation, villages,
+factions, or stronger wards without a user-defined feature scope.
 
 ## Tool activation and checks
 
@@ -53,11 +53,21 @@ empty feature implementations. Add dependencies only when an actual feature
 needs them; GeckoLib is optional and is not installed. Respect asset licenses.
 Read `docs/GAME_DESIGN.md` for the agreed direction. Its future requirements do
 not themselves authorize more gameplay or story content. Keep the implemented
-Vigil Torch prototype distinct from those requirements. Ward state and effects
-are server-authoritative: do not trust particles or client interaction for
+Vigil Torch and Nightfall foundations distinct from those requirements. Ward
+state and effects are server-authoritative: do not trust particles or client interaction for
 protection, force-load chunks, clear unrelated potion effects, or persist the
 derived ward index. Extend meaningful pure-Java tests alongside logic changes;
 world lifecycle and visual claims require actual Minecraft runtime checks.
+
+Nightfall must read authoritative `ServerWorld` time of day and normalize with
+long-safe floor modulo over 24,000 ticks. Queries must remain fresh between
+scheduled observations; queries must not consume or emit transitions. Keep
+phase-transition notifications out of initialization, report only direct observed
+phase changes, and isolate transient state per world. The Nether, End, and custom
+dimensions remain inactive until explicitly supported. Nightfall must never change vanilla time, spawning,
+stats, or Vigil Torch behavior. Its base intensity cannot override protection.
+Keep settings restart-only and validated, preserve existing configuration files,
+and avoid custom networking until a concrete client feature requires it.
 
 ## Runtime boundaries
 
